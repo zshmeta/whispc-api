@@ -25,11 +25,7 @@ USER app
 ENV PATH=$PATH:/home/app/.local/bin
 
 # Install pipx
-RUN pip3 install --user pipx \
-    && pipx ensurepath
-
-# Install whisper-ctranslate2 using pipx
-RUN pipx install whisper-ctranslate2
+RUN pip3 install --user whisper-ctranslate2 --break-system-package
 
 # Create app directory
 WORKDIR /home/app/app
