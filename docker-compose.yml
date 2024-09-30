@@ -1,0 +1,18 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: video-transcription-server:latest
+    container_name: video-transcription-server
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./temp:/home/app/app/temp
