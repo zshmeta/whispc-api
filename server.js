@@ -41,8 +41,6 @@ const upload = multer({
     }
   }
 }).single('file');
-
-// WispAPI endpoint
 app.post('/wispapi', (req, res) => {
   console.log('Received a file upload request.');
   upload(req, res, (error) => {
@@ -56,19 +54,28 @@ app.post('/wispapi', (req, res) => {
     const jsonFilePath = path.join(fileDir, `${filenameWithoutExt}.json`);
     const scriptPath = path.join(__dirname, 'whisper.sh');
 
-    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    res.write('data: Uploading file...\n\n');
+    res.write('Transcription started...\n\n');
 
     // Spawn process to execute the script
     const child = spawn('bash', [scriptPath, uploadedFilePath]);
 
-    // Listen for stdout data from the script
+    // Collect stdout and stderr data
+    let stdoutData = '';
+    let stderrData = '';
+
     child.stdout.on('data', (data) => {
+      stdoutData += data.toString();
       res.write(`data: ${data}\n\n`);
+    });
+
+    child.stderr.on('data', (data) => {
+      stderrData += data.toString();
+      res.write(`data: Error: ${data}\n\n`);
     });
 
     // Handle script completion
@@ -80,17 +87,21 @@ app.post('/wispapi', (req, res) => {
             res.write('data: Error reading JSON file.\n\n');
             return res.status(500).json({ error: 'Failed to read JSON file.' });
           }
-          res.write(`data: ${data}\n\n`);
+          try {
+            const jsonData = JSON.parse(data);
+            // Re-serialize JSON to ensure proper encoding
+            const jsonString = JSON.stringify(jsonData, null, 2);
+            res.write(`data: ${jsonString}\n\n`);
+          } catch (parseError) {
+            res.write('data: Error parsing JSON data.\n\n');
+            return res.status(500).json({ error: 'Invalid JSON format.' });
+          }
           res.end();
         });
       } else {
         res.write('data: Error during script execution.\n\n');
         res.end();
       }
-    });
-
-    child.stderr.on('data', (data) => {
-      res.write(`data: Error: ${data}\n\n`);
     });
   });
 });

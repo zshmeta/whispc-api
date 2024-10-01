@@ -37,7 +37,6 @@ TEMP_WAV_FILE="$DIR/${FILENAME}_temp.wav"
 WAV_FILE="$DIR/${FILENAME}.wav"
 JSON_OUTPUT="$DIR/${FILENAME}.json"
 
-echo "Preparing transcription..."
 
 # Add stdbuf here to force immediate output
 if ! ffmpeg -y -i "$INPUT_FILE" -ar 16000 -ac 1 -c:a pcm_s16le "$TEMP_WAV_FILE" &>/dev/null; then
@@ -52,15 +51,30 @@ if [ -f "$JSON_OUTPUT" ]; then
 fi
 
 # shellcheck disable=SC1091
-source .env
+if [ -f ".env" ]; then
+    set -a  
+    source .env
+    set +a
+fi
 
-echo "Transcribing your media..."
 # Add stdbuf to the whisper-ctranslate2 call
+# Determine the number of available CPU cores
+THREADS=$(nproc)
+
 if ! stdbuf -oL whisper-ctranslate2 --model "$WHISPER_MODEL" \
     --output_format "$WHISPER_OUTPUT_FORMAT" \
-    --word_timestamp "$WHISPER_WORD_TIMESTAMP" \
+    --word_timestamps "$WHISPER_WORD_TIMESTAMP" \
     --output_dir "$DIR" \
-    --device "$WHISPER_DEVICE" "$WAV_FILE" &>/dev/null; then
+    --device "$WHISPER_DEVICE" \
+    --compute_type "int8" \
+    --threads "$THREADS" \
+    --vad_filter True \
+    --vad_threshold 0.5 \
+    --vad_min_speech_duration_ms 500 \
+    --vad_max_speech_duration_s 30 \
+    --verbose True \
+    "$WAV_FILE"; then
     error "whisper-ctranslate2 failed on '$WAV_FILE'."
     exit 1
 fi
+
