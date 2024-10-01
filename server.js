@@ -1,60 +1,92 @@
-// server.js
 const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { execFile } = require('child_process');
-
+const { spawn } = require('child_process');
 const app = express();
 const PORT = process.env.PORT || 9000;
 
-// Configure Multer for file uploads
+// Ensure temp directory exists
+const tempDir = path.join(__dirname, 'temp');
+if (!fs.existsSync(tempDir)) {
+  fs.mkdirSync(tempDir, { recursive: true });
+}
+
+// Configure Multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const filenameWithoutExt = path.parse(file.originalname).name;
+    const fileDir = path.join(tempDir, filenameWithoutExt);
+    if (!fs.existsSync(fileDir)) {
+      fs.mkdirSync(fileDir, { recursive: true });
+    }
+    cb(null, fileDir);
+  },
+  filename: (req, file, cb) => {
+    const filenameWithoutExt = path.parse(file.originalname).name;
+    cb(null, `${filenameWithoutExt}${path.extname(file.originalname)}`);
+  },
+});
+
 const upload = multer({
-  dest: 'uploads/', // Temporary storage directory
-  limits: { fileSize: 500 * 1024 * 1024 }, // Set file size limit as needed
+  storage: storage,
   fileFilter: (req, file, cb) => {
-    const filetypes = /mp3|mp4|webm|wav|m4a|aac|ogg/;
+    const filetypes = /mp3|mp4|webm|wav/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype) || file.mimetype === 'application/octet-stream';
+    const mimetype =
+      filetypes.test(file.mimetype) || file.mimetype === 'application/octet-stream';
     if (mimetype && extname) {
       return cb(null, true);
     } else {
       cb(new Error('Only audio and video files are allowed.'));
     }
   },
-});
+}).single('file');
 
-// POST /whispapi endpoint
-app.post('/whispapi', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded.' });
-  }
-
-  const uploadedFilePath = path.resolve(req.file.path);
-  const scriptPath = path.resolve(__dirname, 'whisper.sh'); // Update the script name if needed
-
-  // Execute the transcription script
-  execFile(scriptPath, [uploadedFilePath], (error, stdout, stderr) => {
+app.post('/whispapi', (req, res) => {
+  console.log('Received a file upload request.');
+  upload(req, res, (error) => {
     if (error) {
-      console.error('Script Error:', stderr.trim());
-      // Attempt to parse stderr as JSON
-      try {
-        const errorObj = JSON.parse(stderr.trim());
-        return res.status(500).json(errorObj);
-      } catch (parseError) {
-        return res.status(500).json({ error: 'Internal Server Error.' });
-      }
+      return res.status(500).json({ error: 'File upload error.' });
     }
 
-    // Attempt to parse stdout as JSON
-    try {
-      const transcriptionData = JSON.parse(stdout.trim());
-      return res.json(transcriptionData);
-    } catch (parseError) {
-      console.error('JSON Parse Error:', parseError.message);
-      console.error('Received Output:', stdout.trim());
-      return res.status(500).json({ error: 'Failed to parse transcription data.' });
-    }
+    const filenameWithoutExt = path.parse(req.file.filename).name;
+    const fileDir = path.join(tempDir, filenameWithoutExt);
+    const uploadedFilePath = path.join(fileDir, req.file.filename);
+    const jsonFilePath = path.join(fileDir, `${filenameWithoutExt}.json`);
+    const scriptPath = path.join(__dirname, 'whisper.sh');
+
+    // Spawn process to execute the script
+    const child = spawn('bash', [scriptPath, uploadedFilePath]);
+
+    // Collect stderr data
+    let stderrData = '';
+
+    child.stderr.on('data', (data) => {
+      stderrData += data.toString();
+    });
+
+    // Handle script completion
+    child.on('close', (code) => {
+      if (code === 0) {
+        fs.readFile(jsonFilePath, 'utf8', (err, data) => {
+          if (err) {
+            console.error('Error reading JSON file:', err);
+            return res.status(500).json({ error: 'Failed to read JSON file.' });
+          }
+          try {
+            const jsonData = JSON.parse(data);
+            res.json(jsonData);
+          } catch (parseError) {
+            console.error('Error parsing JSON data:', parseError);
+            return res.status(500).json({ error: 'Invalid JSON format.' });
+          }
+        });
+      } else {
+        console.error('Error during script execution:', stderrData);
+        res.status(500).json({ error: 'Error during script execution.' });
+      }
+    });
   });
 });
 
