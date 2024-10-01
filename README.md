@@ -1,7 +1,4 @@
-Here’s a `README.md` file that explains how to set up, build, and use your Whisper API Docker application.
-
-```markdown
-# Whisper-API Application
+# Whispc-API Application
 
 This project is a transcription service using `whisper-ctranslate2` and `ffmpeg` to convert audio/video files to text in JSON format. The service accepts file uploads via a REST API, processes them with `whisper-ctranslate2`, and returns the transcription in real-time.
 
@@ -50,7 +47,7 @@ This will start the application on port `3000`.
 
 You can now send a POST request to the `/wispapi` endpoint with an audio or video file. This will return real-time progress updates and the transcription once completed.
 
-#### Example using `curl`:
+#### Example using `curl`
 
 ```bash
 curl -X POST http://localhost:3000/wispapi \
@@ -58,7 +55,7 @@ curl -X POST http://localhost:3000/wispapi \
   --output output.json
 ```
 
-#### Example Response:
+#### Example Response
 
 You will receive progress updates as the file is uploaded and processed. The final response will include the transcription in JSON format:
 
@@ -138,7 +135,7 @@ It will return a simple JSON message confirming the server status.
 
 ## Project Structure
 
-```
+```bash
 .
 ├── Dockerfile           # Dockerfile to build the application image
 ├── README.md            # Project documentation
@@ -162,11 +159,9 @@ It will return a simple JSON message confirming the server status.
 ## License
 
 This project is licensed under the MIT License.
-```
 
-### How to Use the API:
+### How to Use the API
+
 1. **Upload an audio/video file to the `/wispapi` endpoint.**
 2. **Get real-time progress via SSE during the processing of the file.**
 3. **Receive a JSON file containing the transcription once completed.**
-
-This `README.md` file explains everything from setup to usage and troubleshooting steps, making it easier for other developers or users to work with your project.
