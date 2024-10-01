@@ -11,10 +11,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     python3-pip \
     bash \
+    pipx \
     && rm -rf /var/lib/apt/lists/*
 
 # Install whisper-ctranslate2
-RUN pip3 install --no-cache-dir whisper-ctranslate2
+RUN if ! pipx install --no-cache-dir whisper-ctranslate2; then \
+    pip install --no-cache-dir whisper-ctranslate2 --break-system-package; \
+    fi
 
 # Create a non-root user
 RUN useradd -ms /bin/bash app
