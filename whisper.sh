@@ -54,10 +54,10 @@ if [ -f "$JSON_OUTPUT" ]; then
 fi
 
 # Source .env if exists
-if [ -f "$DIR/.env" ]; then
+if [ -f ".env" ]; then
     set -a
     # shellcheck source=/dev/null
-    source "$DIR/.env"
+    source ".env"
     set +a
 fi
 
