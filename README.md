@@ -38,10 +38,10 @@ docker build -t whisper-api .
 Once the image is built, you can run the Docker container:
 
 ```bash
-docker run -d -p 3000:3000 --name whisper-api-container whisper-api
+docker run -d -p 9000:9000 --name whisper-api-container whisper-api
 ```
 
-This will start the application on port `3000`.
+This will start the application on port `9000`.
 
 ### 4. Sending Requests to the API
 
@@ -50,7 +50,7 @@ You can now send a POST request to the `/wispapi` endpoint with an audio or vide
 #### Example using `curl`
 
 ```bash
-curl -X POST http://localhost:3000/wispapi \
+curl -X POST http://localhost:9000/wispapi \
   -F "file=@path/to/your/audio_or_video_file.mp4" \
   --output output.json
 ```
@@ -110,7 +110,7 @@ To run the application locally without Docker:
     node server.js
     ```
 
-The API will be available at `http://localhost:3000`.
+The API will be available at `http://localhost:9000`.
 
 ## Environment Variables
 
@@ -128,7 +128,7 @@ WHISPER_DEVICE=cpu
 You can check if the server is running by visiting the following endpoint:
 
 ```bash
-GET http://localhost:3000/
+GET http://localhost:9000/
 ```
 
 It will return a simple JSON message confirming the server status.
@@ -148,7 +148,7 @@ It will return a simple JSON message confirming the server status.
 ## Troubleshooting
 
 1. **Port Conflict:**
-   - If port `3000` is in use, you can run the container on another port by changing `-p 3000:3000` to `-p <new-port>:3000`.
+   - If port `9000` is in use, you can run the container on another port by changing `-p 9000:9000` to `-p <new-port>:9000`.
 
 2. **File Upload Errors:**
    - Ensure you are uploading supported file types (`MP3`, `MP4`, `WAV`, `WebM`).

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9000;
 
 // Ensure temp directory exists
 const tempDir = path.join(__dirname, 'temp');
@@ -41,7 +41,7 @@ const upload = multer({
     }
   }
 }).single('file');
-app.post('/wispapi', (req, res) => {
+app.post('/whispapi', (req, res) => {
   console.log('Received a file upload request.');
   upload(req, res, (error) => {
     if (error) {

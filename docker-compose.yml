@@ -10,7 +10,7 @@ services:
     image: video-transcription-server:latest
     container_name: video-transcription-server
     ports:
-      - "3000:3000"
+      - "9000:9000"
     restart: unless-stopped
     environment:
       NODE_ENV: production

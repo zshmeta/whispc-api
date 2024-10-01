@@ -43,7 +43,7 @@ COPY --chown=app:app . .
 RUN chmod +x whisper.sh
 
 # Expose the port the app runs on
-EXPOSE 3000
+EXPOSE 9000
 
 # Define the default command to run the application
 CMD ["node", "server.js"]
