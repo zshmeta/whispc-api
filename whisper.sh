@@ -2,14 +2,19 @@
 
 set -euo pipefail
 
-# Function to log errors
+# Function to log errors and messages to stderr
+log() {
+    echo "$1" >&2
+}
+
+# Function to output errors in JSON format to stderr
 error() {
-    echo "Error: $1" >&2
+    echo "{\"error\": \"$1\"}" >&2
 }
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 <file>"
+    echo "Usage: $0 <file>" >&2
     exit 1
 }
 
@@ -61,26 +66,24 @@ if [ -f ".env" ]; then
     set +a
 fi
 
+# Set default values for environment variables if not set
+WHISPER_MODEL="${WHISPER_MODEL:-tiny}"
+WHISPER_OUTPUT_FORMAT="${WHISPER_OUTPUT_FORMAT:-json}"
+WHISPER_WORD_TIMESTAMP="${WHISPER_WORD_TIMESTAMP:-True}"
+WHISPER_DEVICE="${WHISPER_DEVICE:-cpu}"
+
 # Determine number of CPU cores
 THREADS=$(nproc)
 
-# Define desired audio parameters (can be set via .env or defaults)
+# Define desired audio parameters
 DESIRED_SAMPLE_RATE="${DESIRED_SAMPLE_RATE:-16000}"
 DESIRED_CHANNELS="${DESIRED_CHANNELS:-1}"
 DESIRED_AUDIO_CODEC="${DESIRED_AUDIO_CODEC:-pcm_s16le}"
 
 # Log the conversion details
-echo "Converting '$INPUT_FILE' to WAV format with sample rate $DESIRED_SAMPLE_RATE Hz and $DESIRED_CHANNELS channel(s)."
+log "Converting '$INPUT_FILE' to WAV format with sample rate $DESIRED_SAMPLE_RATE Hz and $DESIRED_CHANNELS channel(s)."
 
 # Convert input file to WAV using ffmpeg
-# -y: overwrite output files without asking
-# -vn: disable video
-# -acodec: specify audio codec
-# -ar: set audio sample rate
-# -ac: set number of audio channels
-
-# Using bash's set -x for debugging could be enabled here if needed
-
 if ! ffmpeg -y -i "$INPUT_FILE" \
     -vn \
     -acodec "$DESIRED_AUDIO_CODEC" \
@@ -98,11 +101,10 @@ if [ ! -f "$WAV_FILE" ]; then
     exit 1
 fi
 
-echo "Successfully converted to WAV: '$WAV_FILE'"
+log "Successfully converted to WAV: '$WAV_FILE'"
 
 # Run whisper-ctranslate2
-# Capture stderr for logging
-echo "Starting transcription with whisper-ctranslate2..."
+log "Starting transcription with whisper-ctranslate2..."
 
 if ! whisper-ctranslate2 --model "$WHISPER_MODEL" \
     --output_format "$WHISPER_OUTPUT_FORMAT" \
@@ -115,7 +117,7 @@ if ! whisper-ctranslate2 --model "$WHISPER_MODEL" \
     --vad_threshold 0.5 \
     --vad_min_speech_duration_ms 500 \
     --vad_max_speech_duration_s 30 \
-    --verbose True \
+    --verbose False \
     "$WAV_FILE" \
     2> "$TEMP_DIR/whisper_error.log"; then
     error "whisper-ctranslate2 failed on '$WAV_FILE'. Check '$TEMP_DIR/whisper_error.log' for details."
@@ -128,4 +130,7 @@ if [ ! -f "$JSON_OUTPUT" ]; then
     exit 1
 fi
 
-echo "Transcription completed successfully. Output: '$JSON_OUTPUT'"
+log "Transcription completed successfully. Output: '$JSON_OUTPUT'"
+
+# Output the JSON transcription to stdout
+cat "$JSON_OUTPUT"
