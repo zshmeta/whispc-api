@@ -31,7 +31,7 @@ app.post('/whispapi', upload.single('file'), (req, res) => {
   }
 
   const uploadedFilePath = path.resolve(req.file.path);
-  const scriptPath = path.resolve(__dirname, 'transcribe.sh'); // Update the script name if needed
+  const scriptPath = path.resolve(__dirname, 'whisper.sh'); // Update the script name if needed
 
   // Execute the transcription script
   execFile(scriptPath, [uploadedFilePath], (error, stdout, stderr) => {
