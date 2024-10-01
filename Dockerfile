@@ -5,8 +5,6 @@ FROM node:18-slim
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PIPX_HOME=/home/app/.pipx
-ENV PIPX_BIN_DIR=/home/app/.local/bin
 
 # Install necessary system packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,19 +13,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     && rm -rf /var/lib/apt/lists/*
 
+# Install whisper-ctranslate2
+RUN pip3 install --no-cache-dir whisper-ctranslate2
+
 # Create a non-root user
 RUN useradd -ms /bin/bash app
 
 # Switch to the non-root user
 USER app
 
-# Update PATH for pipx
-ENV PATH=$PATH:/home/app/.local/bin
-
-# Install pipx
-RUN pip3 install --user whisper-ctranslate2 --break-system-package
-
-# Create app directory
+# Set working directory
 WORKDIR /home/app/app
 
 # Copy package.json and package-lock.json
